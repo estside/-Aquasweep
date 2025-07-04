@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+import rospy
+from std_msgs.msg import String
+import sys
+import termios
+import tty
+
+def get_key():
+    fd = sys.stdin.fileno()
+    old_settings = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        key = sys.stdin.read(1)
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
+    return key
+
+def key_publisher():
+    rospy.init_node('keyboard_publisher', anonymous=True)
+    pub = rospy.Publisher('/motor_commands', String, queue_size=10)
+    rate = rospy.Rate(10)  # 10Hz
+
+    rospy.loginfo("Control the motors using keys: i (forward), k (backward), j (left), l (right). Press 'q' to quit.")
+
+    key_map = {
+        'i': 'FORWARD',
+        'k': 'BACKWARD',
+        'j': 'LEFT',
+        'l': 'RIGHT'
+    }
+
+    while not rospy.is_shutdown():
+        key = get_key()
+        if key == 'q':
+            rospy.loginfo("Exiting...")
+            break
+        if key in key_map:
+            command = key_map[key]
+            rospy.loginfo(f"Command: {command}")
+            pub.publish(command)
+        else:
+            rospy.loginfo("Invalid key pressed.")
+        rate.sleep()
+
+if __name__ == '__main__':
+    try:
+        key_publisher()
+    except rospy.ROSInterruptException:
+        pass

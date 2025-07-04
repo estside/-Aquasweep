@@ -1,0 +1,7 @@
+1. source /opt/ros/noetic/setup.bash
+2. sudo screen /dev/ttyACM0 57600
+3. roscore
+4. rosrun rosserial_python serial_node.py _port:=/dev/ttyACM0 _baud:=57600
+5. rosrun keyboard_to_arduino keyboard_publisher.py
+6. rostopic echo /motor_commands
+7. rostopic pub /motor_commands std_msgs/String "data: 'FORWARD'" --once

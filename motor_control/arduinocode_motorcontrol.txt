@@ -1,0 +1,100 @@
+#include <Servo.h>
+#include <ros.h>
+#include <std_msgs/String.h>
+
+// Number of ESCs (thrusters)
+const int numESCs = 8;
+
+// Use PWM-capable pins on Arduino Mega
+int escPins[numESCs] = {2, 3, 4, 5, 6, 7, 8, 9};  // Adjust pins as needed
+Servo esc[numESCs];
+
+// Initial ESC values (neutral throttle)
+int arr[numESCs] = {1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500};
+
+// ROS Node Handle
+ros::NodeHandle nh;
+
+// Function to handle incoming ROS messages
+void motorControl(const std_msgs::String& cmd) {
+    Serial.print("Raw Data Received: ");
+    Serial.println(cmd.data);
+
+    String command = cmd.data;
+
+    Serial.print("Processed Command: ");
+    Serial.println(command);
+
+    if (command == "FORWARD") {
+        for (int i = 0; i < numESCs; i++) {
+            arr[i] = 1600;
+        }
+    } 
+    else if (command == "BACKWARD") {
+        for (int i = 0; i < numESCs; i++) {
+            arr[i] = 1400;
+        }
+    } 
+    else if (command == "LEFT") {
+        // Left turn by lowering left-side thrusters, increasing right-side
+        for (int i = 0; i < numESCs; i++) {
+            if (i % 2 == 0)  // left side
+                arr[i] = 1400;
+            else             // right side
+                arr[i] = 1600;
+        }
+    } 
+    else if (command == "RIGHT") {
+        // Right turn by lowering right-side thrusters, increasing left-side
+        for (int i = 0; i < numESCs; i++) {
+            if (i % 2 == 0)  // left side
+                arr[i] = 1600;
+            else             // right side
+                arr[i] = 1400;
+        }
+    }
+    else if (command == "STOP") {
+        for (int i = 0; i < numESCs; i++) {
+            arr[i] = 1500;
+        }
+        nh.loginfo("Received STOP command.");
+    }
+    else {
+        Serial.println("Unknown Command Received. Stopping Motors.");
+        for (int i = 0; i < numESCs; i++) {
+            arr[i] = 1500;
+        }
+    }
+}
+
+// ROS Subscriber
+ros::Subscriber<std_msgs::String> sub("/motor_commands", motorControl);
+
+void setup() {
+    Serial.begin(9600);
+    nh.initNode();
+    nh.subscribe(sub);
+
+    for (int i = 0; i < numESCs; i++) {
+        esc[i].attach(escPins[i]);
+        esc[i].write(1500);  // Neutral
+        delay(1000);
+        Serial.print("ESC ");
+        Serial.print(i);
+        Serial.println(" initialized.");
+    }
+}
+
+void loop() {
+    nh.spinOnce();
+
+    for (int j = 0; j < numESCs; j++) {
+        esc[j].write(arr[j]);
+        Serial.print("ESC ");
+        Serial.print(j);
+        Serial.print(" -> Throttle: ");
+        Serial.println(arr[j]);
+    }
+
+    delay(10);
+}
