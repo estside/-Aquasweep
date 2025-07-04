@@ -30,7 +30,7 @@
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourname/aquasweep.git
+git clone https://github.com/estside/aquasweep.git
 cd aquasweep/ros_ws
 
 # Build the ROS workspace
